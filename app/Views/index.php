@@ -17,7 +17,7 @@
 
         <div class="w-1/3 bg-white border-r overflow-y-auto">
 
-            <div class="flex items-center justify-between bg-gray-800 text-white p-4 shadow-lg">
+            <div class="flex items-center justify-between bg-gray-800 text-white p-4 shadow-lg" style="height: 80px;">
                 <div class="flex items-center">
                     <img src="https://via.placeholder.com/40" alt="User Avatar" class="rounded-full w-10 h-10">
                     <div class="ml-4">
@@ -40,7 +40,7 @@
 
         <div class="flex-1 flex flex-col">
 
-            <div class="flex items-center bg-gray-800 text-white p-4 shadow-lg">
+            <div class="flex items-center bg-gray-800 text-white p-4 shadow-lg" style="height: 80px;">
                 <img src="https://via.placeholder.com/40" alt="User Avatar" class="rounded-full w-10 h-10">
                 <div class="ml-4">
                     <h1 class="text-lg font-semibold">Chat with User 1</h1>
@@ -71,6 +71,8 @@
                     'X-Requested-With': 'XMLHttpRequest',
                     'X-CSRF-TOKEN': '<?= csrf_hash() ?>'
                 }
+            }).catch(err => console.error(err)).finally(() => {
+                window.location.href = '/login';
             });
         });
 
@@ -96,12 +98,30 @@
                     if (data.length == 0) {
                         chatBody.innerHTML = '<p class="text-center text-gray-400">No message found</p>';
                     } else {
+                        let lastDate = null;
                         data.forEach(message => {
                             let chat = document.createElement('div');
                             chat.classList.add('flex');
                             if (<?php echo session()->get('id') ?> == message.sender_id) {
                                 chat.classList.add('justify-end');
                             }
+
+                            let currentDate = moment(message.created_at).format('DD MMM YYYY');
+
+                            // Check if the current date is different from the last date
+                            if (currentDate !== lastDate) {
+                                let dateContainer = document.createElement('div');
+                                dateContainer.classList.add('w-full', 'text-center');
+                                let dateElement = document.createElement('small');
+                                dateElement.classList.add('text-xs', 'text-gray-400', 'mt-1', 'text-center', 'w-full');
+                                dateElement.innerText = currentDate;
+                                dateContainer.appendChild(dateElement);
+                                chatBody.appendChild(dateContainer);
+
+                                // Update the last shown date
+                                lastDate = currentDate;
+                            }
+
                             let chatBubble = document.createElement('div');
                             chatBubble.classList.add('flex', 'flex-col');
                             chatBubble.style.maxWidth = '80%';

@@ -64,10 +64,7 @@ class AuthController extends BaseController
     public function logout()
     {
         session()->destroy();
-        if (session()->get('logged_in') == FALSE) {
-            return redirect()->to('/login');
-        }
-        return redirect()->to('/login')->with('success', 'Logout success');
-        return $this->response->setJSON(['status' => 'success']);
+
+        return $this->response->setJSON(['status' => true]);
     }
 }
