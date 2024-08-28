@@ -75,7 +75,23 @@ class Counter extends BaseController
             'message' => $this->request->getVar('message'),
             'created_at' => $date->format('Y-m-d H:i:s')
         ];
+        // Pusher
+        $options = array(
+            'cluster' => 'ap1',
+            'useTLS' => true
+        );
+        $pusher = new Pusher(
+            '9eeb4c738de702b10872',
+            '1065e8377b3c9ba3dd99',
+            '1850918',
+            $options
+        );
 
+        try {
+            $result = $pusher->trigger('new-app', 'update-chat', ['data' => $data]);
+        } catch (\Throwable $th) {
+            $result =  $th->getMessage();
+        }
         if (!empty($this->request->getVar('receiver_id'))) {
             $message->insert($data);
             return redirect()->to('/')->with('success', 'Message sent');
@@ -107,6 +123,7 @@ class Counter extends BaseController
             ->where('sender_id', $this->request->getVar('receiver_id'))
             ->where('receiver_id', session()->get('id'))
             ->groupEnd();
+
 
         $data = $message->get()->getResultArray();
         return $this->response->setJSON($data);
