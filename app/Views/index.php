@@ -50,7 +50,7 @@
             </div>
 
             <!-- Chat Body -->
-            <div class="flex-1 p-4 pb-0 overflow-y-auto">
+            <div class="flex-1 p-4 pb-0 overflow-y-auto flex-col-reverse">
                 <div class="space-y-4 position-relative pb-24" id="message-body">
 
                 </div>
@@ -71,13 +71,31 @@
             getAllMessage();
 
         });
-
+        let form = document.querySelector('form');
+        form.addEventListener('submit', (e) => {
+            e.preventDefault();
+            let formData = new FormData(form);
+            $.ajax({
+                url: '/send',
+                type: 'POST',
+                data: formData,
+                contentType: false,
+                processData: false,
+                success: function(response) {
+                    form.reset();
+                },
+                error: function(xhr, status, error) {
+                    console.error('Error:', error);
+                }
+            });
+        });
         var pusher = new Pusher('9eeb4c738de702b10872', {
             cluster: 'ap1'
         });
 
         var channel = pusher.subscribe('new-app');
-
+        var currentState = pusher.connection.state;
+        console.log(currentState);
         channel.bind('update-chat', function(res) {
             let data = res.data;
             console.log('Event received:', data.message); // This should log the event data if received
@@ -110,7 +128,7 @@
 
 
             chatBody.appendChild(chat);
-            scrollToBottom();
+            scrollToBottom(chatBody);
 
         });
 
@@ -196,42 +214,13 @@
 
 
                             chatBody.appendChild(chat);
-                            scrollToBottom();
                         });
+                        scrollToBottom(chatBody);
                     }
 
                     console.log(props?.receiver_id);
-                    // let formControl = `
-                    //         <form action="send" method="post" style="position: absolute; bottom:0; width:100% !important">
-                    //             <div class="flex items-center bg-white p-4 border-t">
-                    //             <input type="hidden" name="receiver_id" value="${props?.receiver_id}">
-                    //                 <input type="text" name="message" placeholder="Type a message" class="input input-bordered w-full mr-2">
-                    //                 <button type="submit" class="btn btn-primary"><i class="fas fa-paper-plane"></i> Send</button>
 
-                    //             </div>
-                    //         </form>
-                    //     `;
-
-                    // chatBody.innerHTML += formControl;
                     $('#input_receiver_id').val(props?.receiver_id);
-                    let form = document.querySelector('form');
-                    form.addEventListener('submit', (e) => {
-                        e.preventDefault();
-                        let formData = new FormData(form);
-                        $.ajax({
-                            url: '/send',
-                            type: 'POST',
-                            data: formData,
-                            contentType: false,
-                            processData: false,
-                            success: function(response) {
-                                form.reset();
-                            },
-                            error: function(xhr, status, error) {
-                                console.error('Error:', error);
-                            }
-                        });
-                    });
                 },
                 error: function(xhr, status, error) {
                     console.error('Error:', error);
@@ -271,22 +260,21 @@
                             let chatItem = document.createElement('div');
                             chatItem.classList.add('flex', 'items-center', 'p-2', 'bg-gray-100', 'rounded-lg', 'cursor-pointer', 'hover:bg-gray-200');
                             chatItem.innerHTML = `
-                            <img src="https://via.placeholder.com/40" alt="User Avatar" class="rounded-full w-10 h-10">
+                            <span class="rounded-full w-10 h-10 bg-primary flex justify-center items-center text-white">${user.receiver_id}</span>
                             <div class="ml-4 flex-1">
-                                <h2 class="text-sm font-semibold">${user.username}</h2>
-                                <p class="text-xs text-gray-500 truncate">Last message from ${user.username}...</p>
+                                <h2 class="text-sm font-semibold">${user.receiver_id == user.sender_id ? 'You' : user.username}</h2>
+                                <p class="text-xs text-gray-500 truncate">${user.message}...</p>
                             </div>
-                            <span class="text-xs text-gray-400">12:45 PM</span>
+                            <span class="text-xs text-gray-400">${moment(user.created_at).format('HH:mm')}</span>
                         `;
                             chatItem.addEventListener('click', () => {
                                 getData({
-                                    receiver_id: user.id
+                                    receiver_id: user.receiver_id
                                 });
                             })
 
 
                             chatList.appendChild(chatItem);
-                            scrollToBottom();
                         });
                     }
 
@@ -294,14 +282,14 @@
         }
 
 
-        const scrollToBottom = () => {
-            const scrollToBottom = () => {
-                const chatBody = document.getElementById('chatBody');
-                if (chatBody) {
-                    chatBody.scrollTop = chatBody.scrollHeight;
-                }
-            };
+        const scrollToBottom = (chatBody) => {
+            if (chatBody) {
+                setTimeout(() => {
+                    chatBody.scrollBottom = chatBody.scrollHeight;
+                }, 50);
 
+                console.log(chatBody.scrollHeight);
+            }
         }
     </script>
 </body>

@@ -101,12 +101,31 @@ class Counter extends BaseController
 
     public function searchUser()
     {
+        $db = \Config\Database::connect();
         $model = new Auth();
-        if (empty($this->request->getVar('value'))) {
-            $data = $model->findAll();
-            return $this->response->setJSON($data);
-        }
-        $data = $model->like('username', $this->request->getVar('value'))->findAll();
+        // if (empty($this->request->getVar('value'))) {
+        //     $data = $model->findAll();
+        //     return $this->response->setJSON($data);
+        // }
+        // $data = $model->like('username', $this->request->getVar('value'))->findAll();
+        $sql = "
+            SELECT users.id,users.username, users.email, latest_message.*
+            FROM users
+            INNER JOIN (
+                SELECT tb_message.*
+                FROM tb_message
+                WHERE tb_message.id IN (
+                    SELECT MAX(id)
+                    FROM tb_message
+                    GROUP BY receiver_id
+                )
+            ) AS latest_message ON latest_message.receiver_id = users.id
+            WHERE users.username LIKE '" . $this->request->getVar('value') . "%'
+            ORDER BY latest_message.created_at DESC;
+        ";
+
+        $query = $db->query($sql);
+        $data = $query->getResult();
         return $this->response->setJSON($data);
     }
 
