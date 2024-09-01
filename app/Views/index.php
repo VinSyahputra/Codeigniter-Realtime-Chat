@@ -39,18 +39,17 @@
         </div>
 
 
-        <div class="w-2/3 flex-1 flex flex-col relative">
+        <div class="w-2/3 hidden flex-1 flex-col relative" id="dashboard-chat">
 
             <div class="flex items-center bg-gray-800 text-white p-4 shadow-lg" style="height: 80px;">
-                <img src="https://via.placeholder.com/40" alt="User Avatar" class="rounded-full w-10 h-10">
+                <span class="rounded-full w-10 h-10 bg-primary flex justify-center items-center text-white" id="profile-chat-user"></span>
                 <div class="ml-4">
-                    <h1 class="text-lg font-semibold">Chat with User 1</h1>
-                    <p class="text-sm text-gray-300">Last seen today at 12:45 PM</p>
+                    <h1 class="text-lg font-semibold" id="chat-with-user"></h1>
                 </div>
             </div>
 
             <!-- Chat Body -->
-            <div class="flex-1 p-4 pb-0 overflow-y-auto flex-col-reverse">
+            <div class="flex-1 p-4 pb-0 overflow-y-auto flex-col-reverse max-h-100">
                 <div class="space-y-4 position-relative pb-24" id="message-body">
 
                 </div>
@@ -64,12 +63,17 @@
                 </div>
             </form>
         </div>
+
+        <div class="w-2/3 flex flex-1 flex-col relative" style="z-index:1" id="dashboard-hero">
+            <div class="bg-white h-full text-center ">
+                <span>Realtime Chat App</span>
+            </div>
+        </div>
     </div>
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             getAllMessage();
-
         });
         let form = document.querySelector('form');
         form.addEventListener('submit', (e) => {
@@ -95,11 +99,9 @@
 
         var channel = pusher.subscribe('new-app');
         var currentState = pusher.connection.state;
-        console.log(currentState);
         channel.bind('update-chat', function(res) {
             let data = res.data;
-            console.log('Event received:', data.message); // This should log the event data if received
-            console.log('Event received:', data.sender_id); // This should log the event data if received
+
             let chatBody = document.querySelector('#message-body');
             let chat = document.createElement('div');
             chat.classList.add('flex');
@@ -162,11 +164,10 @@
                 },
                 success: function(response) {
                     let data = response;
-                    console.log(data);
                     let chatBody = document.querySelector('#message-body');
                     chatBody.innerHTML = '';
                     if (data.length == 0) {
-                        chatBody.innerHTML = '<p class="text-center text-gray-400">No message found</p>';
+                        chatBody.innerHTML = '<p class=" text-center text-gray-400">No message found</p>';
                     } else {
                         let lastDate = null;
                         data.forEach(message => {
@@ -178,7 +179,7 @@
 
                             let currentDate = moment(message.created_at).format('DD MMM YYYY');
 
-                            // Check if the current date is different from the last date
+
                             if (currentDate !== lastDate) {
                                 let dateContainer = document.createElement('div');
                                 dateContainer.classList.add('w-full', 'text-center');
@@ -188,7 +189,7 @@
                                 dateContainer.appendChild(dateElement);
                                 chatBody.appendChild(dateContainer);
 
-                                // Update the last shown date
+
                                 lastDate = currentDate;
                             }
 
@@ -216,9 +217,11 @@
                             chatBody.appendChild(chat);
                         });
                         scrollToBottom(chatBody);
+                        headerChat({
+                            receiver_id: data[0].receiver_id,
+                            username: data[0].username,
+                        })
                     }
-
-                    console.log(props?.receiver_id);
 
                     $('#input_receiver_id').val(props?.receiver_id);
                 },
@@ -259,18 +262,26 @@
                         data.forEach(user => {
                             let chatItem = document.createElement('div');
                             chatItem.classList.add('flex', 'items-center', 'p-2', 'bg-gray-100', 'rounded-lg', 'cursor-pointer', 'hover:bg-gray-200');
-                            chatItem.innerHTML = `
-                            <span class="rounded-full w-10 h-10 bg-primary flex justify-center items-center text-white">${user.receiver_id}</span>
-                            <div class="ml-4 flex-1">
-                                <h2 class="text-sm font-semibold">${user.receiver_id == user.sender_id ? 'You' : user.username}</h2>
-                                <p class="text-xs text-gray-500 truncate">${user.message}...</p>
-                            </div>
-                            <span class="text-xs text-gray-400">${moment(user.created_at).format('HH:mm')}</span>
-                        `;
+                            chatItem.innerHTML =
+                                `
+                                <span class="rounded-full w-10 h-10 bg-primary flex justify-center items-center text-white">${user.receiver_id}</span>
+                                <div class="ml-4 flex-1">
+                                    <h2 class="text-sm font-semibold">${user.receiver_id == user.sender_id ? 'You' : user.username}</h2>
+                                    <p class="text-xs text-gray-500 truncate">${user.message}...</p>
+                                </div>
+                                <span class="text-xs text-gray-400">${moment().format('DD-MM-YYYY') == moment(user.created_at).format('DD-MM-YYYY')? moment(user.created_at).format('HH:mm') : moment(user.created_at).format('DD-MM-YYYY')}</span>
+                                `;
                             chatItem.addEventListener('click', () => {
+                                document.getElementById('dashboard-chat').classList.add('w-2/3', 'flex', 'flex-1', 'flex-col', 'relative');
+                                document.getElementById('dashboard-chat').classList.remove('hidden');
+                                document.getElementById('dashboard-hero').classList.add('hidden');
+                                document.getElementById('dashboard-hero').classList.remove('w-2/3', 'flex');
+
+
                                 getData({
                                     receiver_id: user.receiver_id
                                 });
+
                             })
 
 
@@ -281,14 +292,18 @@
                 });
         }
 
+        const headerChat = (props) => {
+            $('#chat-with-user').html(props?.username)
+            $('#profile-chat-user').html(props?.receiver_id)
+        }
+
 
         const scrollToBottom = (chatBody) => {
             if (chatBody) {
                 setTimeout(() => {
-                    chatBody.scrollBottom = chatBody.scrollHeight;
+                    chatBody.scrollTop = chatBody.scrollHeight;
                 }, 50);
 
-                console.log(chatBody.scrollHeight);
             }
         }
     </script>

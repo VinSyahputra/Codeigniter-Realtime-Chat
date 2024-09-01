@@ -131,20 +131,32 @@ class Counter extends BaseController
 
     public function getMessages()
     {
+        $db = \Config\Database::connect();
         $message = new Message();
         // $message = $db->table('tb_message');
 
-        $message->groupStart()
-            ->where('sender_id', session()->get('id'))
-            ->where('receiver_id', $this->request->getVar('receiver_id'))
-            ->groupEnd()
-            ->orGroupStart()
-            ->where('sender_id', $this->request->getVar('receiver_id'))
-            ->where('receiver_id', session()->get('id'))
-            ->groupEnd();
+        // $message->groupStart()
+        //     ->where('sender_id', session()->get('id'))
+        //     ->where('receiver_id', $this->request->getVar('receiver_id'))
+        //     ->groupEnd()
+        //     ->orGroupStart()
+        //     ->where('sender_id', $this->request->getVar('receiver_id'))
+        //     ->where('receiver_id', session()->get('id'))
+        //     ->groupEnd();
 
+        $sql = "
+        SELECT tb_message.*, users.username
+        FROM tb_message
+        inner join users ON tb_message.receiver_id = users.id
+        WHERE (sender_id = '" . session()->get('id') . "' AND receiver_id = '" . $this->request->getVar('receiver_id') . "')
+        OR (sender_id = '" . $this->request->getVar('receiver_id') . "' AND receiver_id = '" . session()->get('id') . "')";
 
-        $data = $message->get()->getResultArray();
+        $query = $db->query($sql);
+        $data = $query->getResultArray();
+        // echo "<pre>";
+        // print_r($data);
+        // die();        
+        // $data = $message->get()->getResultArray();
         return $this->response->setJSON($data);
     }
 }
